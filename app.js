@@ -23,7 +23,7 @@ app.post("/", function(req, res){
       });
       
       const run = async () => {
-        const response = await client.lists.batchListMembers("6bf1f02a76", {
+        const response = await client.lists.batchListMembers(process.env.List_ID, {
           members: [
             {
                 email_address: email,

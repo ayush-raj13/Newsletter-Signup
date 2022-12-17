@@ -2,7 +2,7 @@ require('dotenv').config()
 
 const express = require("express");
 const bodyParser = require("body-parser");
-const client = require("@mailchimp/mailchimp_marketing");
+const request = require("request");
 const path = require("path");
 const app = express();
 
@@ -18,14 +18,9 @@ app.post("/", function(req, res){
     var lastName = req.body.lName;
     var email = req.body.email;
     console.log(firstName + lastName + email);
-    client.setConfig({
-        apiKey: process.env.API_KEY,
-        server: "us21",
-      });
-      
-      const run = async () => {
-        const response = await client.lists.batchListMembers(process.env.List_ID, {
-          members: [
+
+    const data = {
+        members: [
             {
                 email_address: email,
                 status: "subscribed",
@@ -33,17 +28,33 @@ app.post("/", function(req, res){
                     FNAME: firstName,
                     LNAME: lastName
                 }
-            }],
-        });
-        console.log(response);
-        if (response.errors.length==0){
-            res.send("Successfully Subscribed!");
-        }else {
-            res.send("There was an error with signing up, " + response.errors[0].error_code + ", please try again!");
+            }]
+    }
+
+    const postData = JSON.stringify(data);
+
+    const options = {
+        url: `https://us21.api.mailchimp.com/3.0/lists/${process.env.List_ID}/`,
+        method: 'POST',
+        headers: {
+            Authorization: `auth ${process.env.API_KEY}`
+        },
+        body: postData
+    }
+    
+    request(options, (err, response, body) => {
+        if(err) {
+            res.redirect('/fail.html');
         }
-      };
-      
-      run();
+        else {
+            if (response.statusCode === 200) {
+                res.redirect('/success.html');
+            }
+            else {
+                res.redirect('/fail.html');
+            }
+        }
+    });
 });
 
 app.listen(process.env.PORT || 3000, function(){
